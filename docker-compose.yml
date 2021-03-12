@@ -23,6 +23,19 @@ services:
       - mosquitto
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      
+  portainer:
+    image: portainer/portainer
+    command: -H unix:///var/run/docker.sock
+    restart: always
+    ports:
+      - 9000:9000
+      - 8000:8000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
 
 volumes:
   influxdb-storage:
+  portainer_data:
