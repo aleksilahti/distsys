@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+      - "8090:8090"
+    environment:
+      - INFLUXDB_DB=conversations
+      - INFLUXDB_USER=telegraf
+      - INFLUXDB_USER_PASSWORD=telegraf
+    volumes:
+      - influxdb-storage:/var/lib/influxdb
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    links:
+      - influxdb
+      - mosquitto
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+volumes:
+  influxdb-storage:

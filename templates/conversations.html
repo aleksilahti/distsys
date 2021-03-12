@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Conversations</title>
+{% endblock %}
+
+{% block body %}
+<h1>Conversations</h1>
+<div >
+    {% if conversations %}
+        <div>
+            {% for conv in conversations %}
+                <a href="{{ url_for('conversation', conv_name=conv.conv_name) }}">{{ conv.conv_name }}</a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <span>You don't have any conversations</span>
+    {% endif %}
+</div>
+
+{% endblock %}
