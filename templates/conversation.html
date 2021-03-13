@@ -6,8 +6,30 @@
 
 {% block body %}
 <h1>{{ conv.conv_name }}</h1>
-<div >
+<div class="content-section">
+		<form method="POST" action="">
+			{{ form.hidden_tag() }}
+			<fieldset class="form-group">
+				<legend class="border-bottom mb-4">Send Messages</legend>
+                <div class="form-group">
+                    {{ form.message.label(class="form-control-label") }}
 
+                    {% if form.message.errors %}
+                        {{ form.message(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.message.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.message(class="form-control form-control-lg") }}
+                    {% endif %}
+                    </div>
+                </fieldset>
+			<div class="form-group">
+				{{ form.submit(class="btn btn-outline-info") }}
+			</div>
+		</form>
 </div>
 
 {% endblock %}

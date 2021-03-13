@@ -5,7 +5,7 @@ import email_validator
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
 from wtforms import StringField, SubmitField, PasswordField, BooleanField
-
+from base64 import urlsafe_b64encode as b64encode, urlsafe_b64decode as b64decode
 app = Flask("Conversation app")
 from flask_sqlalchemy import SQLAlchemy
 
@@ -94,6 +94,10 @@ class ConversationForm(FlaskForm):
 		if conv:
 			raise ValidationError('Conversation with that name exists')
 
+class MessageForm(FlaskForm):
+    message = StringField('Message: ', validators=[DataRequired(), Length(min=1, max=144)])
+
+    submit = SubmitField('Send message')
 
 # Home / Base URL
 @app.route("/", methods=["GET", "POST"])
@@ -105,7 +109,6 @@ def home():
     if form.validate_on_submit():
         # Hash the password and insert the conversation in SQLAlchemy db
         hashed_pw = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        print(str(current_user.id))
         conv = Conv(conv_name=form.conv_name.data, pw_hash=hashed_pw, user=User.query.get(int(current_user.id)))
         db.session.add(conv)
         db.session.commit()
@@ -125,7 +128,7 @@ def login():
         if user and bcrypt.check_password_hash(user.pw_hash, form.password.data):
             login_user(user, remember=form.remember.data)
             session["user"] = user.id
-            return redirect(url_for('home'))
+            return redirect(url_for('conversations'))
         else:
             flash('Login Failed. Please Check Username and Password', 'error')
     return render_template('login.html', title='Login', form=form)
@@ -153,13 +156,33 @@ def conversations():
     return redirect(url_for('login'))
 
 @app.route("/conversation/<conv_name>", methods=["GET", "POST"])
-def conversation(conv_name):
+def conversation(conv_name, conv_data = {}):
     if current_user.is_authenticated:
         conv = Conv.query.filter_by(conv_name=conv_name).first()
         mqtt.subscribe('conversations/' + conv_name)
-        mqtt.publish('conversations/' + conv_name, 'weather,location=us-midwest temperature=82')
-        return render_template('conversation.html', conv=conv)
+        form = MessageForm()
+        if form.validate_on_submit():
+            message = createMessage(conv_name, form.message.data)
+            mqtt.publish('conversations/' + conv_name, message)
+            return redirect(url_for('conversation', conv_name=conv_name))
+        return render_template('conversation.html', conv=conv, form=form)
     return redirect(url_for('login'))
+
+@mqtt.on_message()
+def handle_mqtt_message(client, userdata, message):
+    data = dict(
+        topic=message.topic,
+        payload=message.payload.decode()
+    )
+    print(message.payload.decode())
+
+def createMessage(conv, msg):
+    user = User.query.filter_by(id=current_user.id).first()
+    conv = Conv.query.filter_by(conv_name=conv).first()
+    # message in line protocol format for Telegraf and InfluxDB
+    b64_msg = b64encode(msg.encode('utf-8'))
+    lpf_message = "{},username={} msg={}".format(conv.id, user.id, b64_msg)
+    return lpf_message
 
 # Toggle debug mode (run as "python3 app.py")
 if __name__ == "__main__":
