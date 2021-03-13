@@ -16,3 +16,4 @@ python3 app.py
 flask run
 
 ## Docker usage
+https://docs.docker.com/engine/install/ubuntu/
