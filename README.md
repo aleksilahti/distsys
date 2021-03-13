@@ -15,5 +15,8 @@ python3 app.py
 ### Ran app in production mode
 flask run
 
-## Docker usage
+## Docker-Engine install
 https://docs.docker.com/engine/install/ubuntu/
+
+## Docker-compose install
+https://docs.docker.com/compose/install/
