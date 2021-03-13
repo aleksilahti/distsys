@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, request, url_for, flash, session
+from flask_mqtt import Mqtt
 import os
 import email_validator
 from flask_wtf import FlaskForm
@@ -16,6 +17,12 @@ SECRET_KEY = os.urandom(32)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['MQTT_BROKER_URL'] = 'localhost' #test server at mosquitto
+app.config['MQTT_BROKER_PORT'] = 1883
+app.config['MQTT_USERNAME'] = 'user'
+app.config['MQTT_PASSWORD'] = 'secret'
+app.config['MQTT_REFRESH_TIME'] = 1.0  # refresh time in seconds
+mqtt = Mqtt(app)
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
@@ -149,6 +156,8 @@ def conversations():
 def conversation(conv_name):
     if current_user.is_authenticated:
         conv = Conv.query.filter_by(conv_name=conv_name).first()
+        mqtt.subscribe('conversations/' + conv_name)
+        mqtt.publish('conversations/' + conv_name, 'weather,location=us-midwest temperature=82')
         return render_template('conversation.html', conv=conv)
     return redirect(url_for('login'))
 
